@@ -11,8 +11,9 @@ import React, {
 import type { InputStatus, MidiDevice, NoteEvent, PedalEvent } from "@/types";
 import { WebMidiProvider } from "@/lib/midi/WebMidiProvider";
 import { OnscreenProvider } from "@/lib/midi/OnscreenProvider";
+import { MicrophoneProvider } from "@/lib/midi/MicrophoneProvider";
 
-type ActiveProviderType = "web_midi" | "onscreen" | null;
+type ActiveProviderType = "web_midi" | "onscreen" | "microphone" | null;
 
 interface MidiContextValue {
   activeNotes: Map<number, NoteEvent>;
@@ -25,6 +26,7 @@ interface MidiContextValue {
   requestMidiAccess: () => Promise<void>;
   connectDevice: (deviceId: string) => Promise<void>;
   switchToOnscreen: () => Promise<void>;
+  switchToMicrophone: () => Promise<void>;
   disconnectAll: () => Promise<void>;
   refreshDevices: () => void;
 
@@ -49,19 +51,22 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
 
   const webMidi = useRef<WebMidiProvider | null>(null);
   const onscreen = useRef<OnscreenProvider | null>(null);
+  const microphone = useRef<MicrophoneProvider | null>(null);
 
   useEffect(() => {
     webMidi.current = new WebMidiProvider();
     onscreen.current = new OnscreenProvider();
+    microphone.current = new MicrophoneProvider();
 
     return () => {
       webMidi.current?.disconnect();
       onscreen.current?.disconnect();
+      microphone.current?.disconnect();
     };
   }, []);
 
   const attachCallbacks = useCallback(
-    (provider: WebMidiProvider | OnscreenProvider) => {
+    (provider: WebMidiProvider | OnscreenProvider | MicrophoneProvider) => {
       provider.onNoteStart((event: NoteEvent) => {
         setActiveNotes((prev) => {
           const next = new Map(prev);
@@ -85,6 +90,15 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
     },
     []
   );
+
+  const disconnectAll = useCallback(async () => {
+    await webMidi.current?.disconnect();
+    await onscreen.current?.disconnect();
+    await microphone.current?.disconnect();
+    setStatus({ type: "disconnected" });
+    setActiveProviderType(null);
+    setActiveNotes(new Map());
+  }, []);
 
   const refreshDevices = useCallback(() => {
     if (webMidi.current) {
@@ -118,6 +132,9 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
       const provider = webMidi.current;
       if (!provider) return;
 
+      await microphone.current?.disconnect();
+      await onscreen.current?.disconnect();
+
       await provider.connectDevice(deviceId);
       attachCallbacks(provider);
       setStatus(provider.getStatus());
@@ -130,7 +147,8 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
     const provider = onscreen.current;
     if (!provider) return;
 
-    if (webMidi.current) await webMidi.current.disconnect();
+    await webMidi.current?.disconnect();
+    await microphone.current?.disconnect();
 
     await provider.connect();
     attachCallbacks(provider);
@@ -138,13 +156,18 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
     setActiveProviderType("onscreen");
   }, [attachCallbacks]);
 
-  const disconnectAll = useCallback(async () => {
+  const switchToMicrophone = useCallback(async () => {
+    const provider = microphone.current;
+    if (!provider) return;
+
     await webMidi.current?.disconnect();
     await onscreen.current?.disconnect();
-    setStatus({ type: "disconnected" });
-    setActiveProviderType(null);
-    setActiveNotes(new Map());
-  }, []);
+
+    await provider.connect();
+    attachCallbacks(provider);
+    setStatus(provider.getStatus());
+    setActiveProviderType("microphone");
+  }, [attachCallbacks]);
 
   const triggerOnscreenNoteStart = useCallback(
     (noteNumber: number, velocity = 80) => {
@@ -169,6 +192,7 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
         requestMidiAccess,
         connectDevice,
         switchToOnscreen,
+        switchToMicrophone,
         disconnectAll,
         refreshDevices,
         triggerOnscreenNoteStart,

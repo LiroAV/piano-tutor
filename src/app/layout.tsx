@@ -39,16 +39,34 @@ export default function RootLayout({
             </Link>
             <div className="flex items-center gap-1">
               <Link
+                href="/lessons"
+                className="px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+              >
+                Lessons
+              </Link>
+              <Link
                 href="/play"
                 className="px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
               >
                 Play
               </Link>
               <Link
+                href="/chat"
+                className="px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+              >
+                Chat
+              </Link>
+              <Link
                 href="/connect"
                 className="px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
               >
                 Connect
+              </Link>
+              <Link
+                href="/progress"
+                className="px-3 py-1.5 rounded-md text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+              >
+                Progress
               </Link>
             </div>
           </nav>

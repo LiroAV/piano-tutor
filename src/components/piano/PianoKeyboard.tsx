@@ -41,7 +41,10 @@ function keyLeft(key: KeyData): number {
 
 interface Props {
   activeNotes: Set<number>;
+  /** Single note to highlight (sequence exercises) */
   highlightNote?: number;
+  /** Set of notes to highlight (musical exercises — chords) */
+  highlightNotes?: Set<number>;
   showNoteNames?: boolean;
   onNoteStart?: (noteNumber: number) => void;
   onNoteEnd?: (noteNumber: number) => void;
@@ -51,6 +54,7 @@ interface Props {
 export function PianoKeyboard({
   activeNotes,
   highlightNote,
+  highlightNotes,
   showNoteNames = true,
   onNoteStart,
   onNoteEnd,
@@ -117,7 +121,7 @@ export function PianoKeyboard({
         {/* White keys */}
         {whiteKeys.map((key) => {
           const isActive = activeNotes.has(key.noteNumber);
-          const isHighlight = highlightNote === key.noteNumber;
+          const isHighlight = highlightNote === key.noteNumber || (highlightNotes?.has(key.noteNumber) ?? false);
           const noteName = midiNoteToName(key.noteNumber);
           const isC = key.noteNumber % 12 === 0;
 
@@ -157,7 +161,7 @@ export function PianoKeyboard({
         {/* Black keys — rendered on top */}
         {blackKeys.map((key) => {
           const isActive = activeNotes.has(key.noteNumber);
-          const isHighlight = highlightNote === key.noteNumber;
+          const isHighlight = highlightNote === key.noteNumber || (highlightNotes?.has(key.noteNumber) ?? false);
 
           return (
             <div
